@@ -1,0 +1,209 @@
+<html>
+
+<head>
+    <script language="JavaScript" src="https://code.jquery.com/jquery-2.1.3.js"></script>
+    <script language="JavaScript">
+        var idCounter = 0,
+            $ship,
+            $battleField, //battle field
+            initShip = function (x, y) {
+                var $s = $('<span class="ship" id="b' + idCounter+++'"></span>');
+                $battleField.append($s);
+
+                $s.css({
+                    top: y,
+                    left: x
+                });
+
+                return $s;
+            },
+            loadBullet = function ($ship) {
+                var $bullet = $('<span class="bullet" id="b' + idCounter+++'"></span>'),
+                        shipPos = $ship.position();
+
+                $battleField.append($bullet);
+
+                $bullet.css({
+                    top: shipPos.top + 5,
+                    left: shipPos.left + 5
+                });
+                return $bullet;
+            },
+            getEndPoint = function (x1, y1, degree) {
+                var MY = $battleField.height() - 1,
+                    MX = $battleField.width() - 1,
+                    res = {
+                        x: x1,
+                        y: y1
+                    },
+                    rad = degree * (Math.PI / 180),
+                    tan = Math.tan(rad),
+                    d = degree % 360;
+
+                switch (d) {
+                    case 270:
+                        res.y = MY;
+                        break;
+                    case 180:
+                        res.x = 0;
+                        break;
+                    case 90:
+                        res.y = 0;
+                        break;
+                    case 0:
+                        res.x = MX;
+                        break;
+                    default:
+                        if(d > 180){
+                            res.x = x1 - (y1 / tan);
+                            res.y = MY;
+
+                            if (res.x > MX) {
+                                res.x = MX;
+                                res.y = y1 - (tan * (MX - x1));
+                            }
+
+                            if (res.x < 0) {
+                                res.x = 0;
+                                res.y = y1 + (tan * x1);
+                            }
+                        }else{
+                            res.x = x1 + (y1 / tan);
+                            res.y = 0;
+                            if (res.x > MX) {
+                                res.x = MX;
+                                res.y = y1 - (tan * (MX - x1));
+                            }
+                            if (res.x < 0) {
+                                res.x = 0;
+                                res.y = y1 + (tan * x1);
+                            }
+                        }
+                }
+
+                return res;
+            },
+            fireBullet = function ($bullet, degree) {
+                var height = $battleField.height(),
+                    width = $battleField.width(),
+                    speed = 0.5,
+                    bp = $bullet.position(),
+                    ep = getEndPoint(bp.left, bp.top, degree),
+                    distance = Math.sqrt(Math.pow(ep.x - bp.left, 2) + Math.pow(ep.y - bp.top, 2)),
+                    time = distance / speed;
+
+                $bullet.css({
+                    transitionDuration: time + 'ms'
+                });
+
+                window.setTimeout(function () {
+                    $bullet.css({
+                        top: ep.y - 3,
+                        left: ep.x - 3
+                    });
+                }, 0);
+
+                window.setTimeout(function () {
+                    $bullet.remove();
+                }, time);
+            },
+            moveShip = function (dx, dy) {
+                var shipPos = $ship.position(),
+                    top = (dy + shipPos.top),
+                    left = (dx + shipPos.left);
+                if(($battleField.height() - 10) < top){
+                    top = 0;
+                }
+                if(($battleField.width() - 10) < left){
+                    left = 0;
+                }
+                if(top < 0){
+                    top = $battleField.height() - 10;
+                }
+                if(left < 0){
+                    left = $battleField.width() - 10;
+                }
+                $ship.css({
+                    top: top,
+                    left: left
+                });
+            };
+
+        $(document).ready(function () {
+            $battleField = $('.battlefield');
+            $ship = initShip(600, 200);
+
+            $('#u').click(function () {
+                moveShip(0, -5);
+            });
+            $('#l').click(function () {
+                moveShip(-5, 0);
+            });
+            $('#r').click(function () {
+                moveShip(5, 0);
+            });
+            $('#v').click(function () {
+                moveShip(0, 5);
+            });
+
+            $('.fire').click(function () {
+                var $bullet = fireBullet(loadBullet($ship), $('#degrees').val());
+            });
+
+            $('.crazy').click(function(){
+                var x = 0;
+                window.setInterval(function(){
+                    $bullet = fireBullet(loadBullet($ship), (x % 2 == 0 ? 1 : -1) * x++);
+                    moveShip(
+                        (Math.random() > .3 ? 1 : -1) * Math.round(Math.random() * 10),
+                        (Math.random() > .7 ? 1 : -1) *  Math.round(Math.random() * 10));
+                }, 100);
+            });
+        });
+
+    </script>
+</head>
+<style>
+    .battlefield {
+        position: absolute;
+        top: 35px;
+        left: 0px;
+        right: 0px;
+        bottom: 0;
+        border: 1px solid gray;
+    }
+    .ship {
+        height: 10px;
+        width: 10px;
+        border-radius: 10px;
+        background-color: black;
+        border: 1px solid green;
+        display: inline-block;
+        position: absolute;
+        transition-property: all;
+        transition-duration: 100ms;
+        transition-timing-function: linear;
+    }
+    .bullet {
+        height: 3px;
+        width: 3px;
+        background-color: black;
+        border: 1px solid red;
+        display: inline-block;
+        position: absolute;
+        transition-property: all;
+        transition-timing-function: linear;
+    }
+</style>
+<body>
+
+    <input type='button' class='crazy' value='Crazy' />
+    <input type='button' class='fire' value='Fire' />
+    <input type='text' id="degrees" size=1 value=22.5 />
+    <input type='button' id="l" value='<' />
+    <input type='button' id="u" value='^' />
+    <input type='button' id="v" value='v' />
+    <input type='button' id="r" value='>' />
+    <div class='battlefield'></div>
+</body>
+</html>
